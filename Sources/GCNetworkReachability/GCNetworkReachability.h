@@ -24,7 +24,9 @@
 //  THE SOFTWARE.
 
 #import <Foundation/Foundation.h>
+#if TARGET_OS_IOS
 #import <SystemConfiguration/SystemConfiguration.h>
+#endif
 #import <netinet/in.h>
 
 #define PRINT_REACHABILITY_FLAGS 0
@@ -62,8 +64,9 @@ extern NSString * const kGCNetworkReachabilityStatusKey;
 
 - (id)initWithHostName:(NSString *)hostName;
 
+#if TARGET_OS_IOS
 - (id)initWithReachability:(SCNetworkReachabilityRef)reachability;
-
+#endif
 
 - (void)startMonitoringNetworkReachabilityWithHandler:(void(^)(GCNetworkReachabilityStatus status))block;
 
@@ -83,6 +86,8 @@ extern NSString * const kGCNetworkReachabilityStatusKey;
 - (BOOL)isReachableViaWWAN;
 #endif
 
+#if TARGET_OS_IOS
 - (SCNetworkReachabilityFlags)reachabilityFlags;
+#endif
 
 @end

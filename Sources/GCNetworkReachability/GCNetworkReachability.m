@@ -50,11 +50,13 @@
 #   endif
 #endif
 
+#if TARGET_OS_IOS
 struct GCNetworkReachabilityFlagContext
 {
     SCNetworkReachabilityRef target;
     uint32_t *value;
 };
+#endif
 
 static BOOL _localWiFi = NO;
 static dispatch_queue_t _reachability_queue, _lock_queue;
@@ -68,8 +70,11 @@ NSString * const kGCNetworkReachabilityStatusKey                = @"NetworkReach
 
 @implementation GCNetworkReachability
 {
+#if TARGET_OS_IOS
     SCNetworkReachabilityRef _networkReachability;
+#endif
     void(^_handler_blk)(GCNetworkReachabilityStatus);
+
 }
 
 static inline dispatch_queue_t GCNetworkReachabilityLockQueue()
@@ -77,6 +82,7 @@ static inline dispatch_queue_t GCNetworkReachabilityLockQueue()
     return _lock_queue ?: (_lock_queue = dispatch_queue_create("com.gcnetworkreachability.queue.lock", DISPATCH_QUEUE_SERIAL));
 }
 
+#if TARGET_OS_IOS
 static void GCNetworkReachabilityPrintFlags(SCNetworkReachabilityFlags flags)
 {
 #if PRINT_REACHABILITY_FLAGS
@@ -97,19 +103,26 @@ static void GCNetworkReachabilityPrintFlags(SCNetworkReachabilityFlags flags)
             );
 #endif
 }
+#endif
 
 + (instancetype)reachabilityWithHostName:(NSString *)hostName
 {
     assert(hostName);
     
+#if TARGET_OS_IOS
     return [[self alloc] initWithReachability:SCNetworkReachabilityCreateWithName(kCFAllocatorDefault, [hostName UTF8String])];
+#endif
+    return [self reachabilityForLocalWiFi];
 }
 
 + (instancetype)reachabilityWithHostAddress:(const struct sockaddr *)hostAddress
 {
     assert(hostAddress);
     
+#if TARGET_OS_IOS
     return [[self alloc] initWithReachability:SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr *)hostAddress)];
+#endif
+    return [self reachabilityForLocalWiFi];
 }
 
 static void GCNetworkReachabilitySetSocketAddress(struct sockaddr_in *addr)
@@ -188,16 +201,26 @@ static void GCNetworkReachabilitySetIPv6SocketAddress(struct sockaddr_in6 *addr)
 {
     assert(hostAddress);
     
+#if TARGET_OS_IOS
     return [self initWithReachability:SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr *)hostAddress)];
+#endif
+    self = [super init];
+    
+    return  self;
 }
 
 - (id)initWithHostName:(NSString *)hostName
 {
     assert(hostName);
-    
+#if TARGET_OS_IOS
     return [self initWithReachability:SCNetworkReachabilityCreateWithName(kCFAllocatorDefault, [hostName UTF8String])];
+#endif
+    self = [super init];
+    
+    return  self;
 }
 
+#if TARGET_OS_IOS
 - (id)initWithReachability:(SCNetworkReachabilityRef)reachability
 {
     self = [super init];
@@ -213,22 +236,27 @@ static void GCNetworkReachabilitySetIPv6SocketAddress(struct sockaddr_in6 *addr)
     }
     return self;
 }
+#endif
 
 - (void)createReachabilityQueue
 {
     _reachability_queue = dispatch_queue_create("com.gcnetworkreachability.queue.callback", DISPATCH_QUEUE_SERIAL);
     
+#if TARGET_OS_IOS
     if (!SCNetworkReachabilitySetDispatchQueue(self->_networkReachability, _reachability_queue))
     {
         GCNRLog(@"SCNetworkReachabilitySetDispatchQueue() failed with error code: %s", SCErrorString(SCError()));
         
         [self releaseReachabilityQueue];
     }
+#endif
 }
 
 - (void)releaseReachabilityQueue
 {
+#if TARGET_OS_IOS
     if (self->_networkReachability) SCNetworkReachabilitySetDispatchQueue(self->_networkReachability, NULL);
+#endif
     
     if (_reachability_queue)
     {
@@ -241,11 +269,13 @@ static void GCNetworkReachabilitySetIPv6SocketAddress(struct sockaddr_in6 *addr)
 {
     [self stopMonitoringNetworkReachability];
     
+#if TARGET_OS_IOS
     if (self->_networkReachability)
     {
-        CFRelease(self->_networkReachability);
+        CFRelease((__bridge CFTypeRef)(self->_networkReachability));
         self->_networkReachability = NULL;
     }
+#endif
     
     if (_lock_queue)
     {
@@ -254,6 +284,7 @@ static void GCNetworkReachabilitySetIPv6SocketAddress(struct sockaddr_in6 *addr)
     }
 }
 
+#if TARGET_OS_IOS
 static GCNetworkReachabilityStatus GCNetworkReachabilityStatusForFlags(SCNetworkReachabilityFlags flags)
 {
     GCNetworkReachabilityStatus status = (GCNetworkReachabilityStatus)0;
@@ -295,7 +326,9 @@ static GCNetworkReachabilityStatus GCNetworkReachabilityStatusForFlags(SCNetwork
     }
     return status;
 }
+#endif
 
+#if TARGET_OS_IOS
 static void GCNetworkReachabilityGetCurrentStatus(void *context)
 {
     struct GCNetworkReachabilityFlagContext *ctx = context;
@@ -312,7 +345,9 @@ static void GCNetworkReachabilityGetCurrentStatus(void *context)
     currentStatus = GCNetworkReachabilityStatusForFlags(flags);
     ctx->value = &currentStatus;
 }
+#endif
 
+#if TARGET_OS_IOS
 - (GCNetworkReachabilityStatus)currentReachabilityStatus
 {
     static uint32_t status;
@@ -324,6 +359,7 @@ static void GCNetworkReachabilityGetCurrentStatus(void *context)
     dispatch_sync_f(GCNetworkReachabilityLockQueue(), &context, GCNetworkReachabilityGetCurrentStatus);
     return *context.value;
 }
+#endif
 
 - (BOOL)isReachable
 {
@@ -342,6 +378,7 @@ static void GCNetworkReachabilityGetCurrentStatus(void *context)
 }
 #endif
 
+#if TARGET_OS_IOS
 static void GCNetworkReachabilityGetFlags(void *context)
 {
     struct GCNetworkReachabilityFlagContext *ctx = context;
@@ -353,7 +390,9 @@ static void GCNetworkReachabilityGetFlags(void *context)
         ctx->value = &zeroVal;
     }
 }
+#endif
 
+#if TARGET_OS_IOS
 - (SCNetworkReachabilityFlags)reachabilityFlags
 {
     static uint32_t flags;
@@ -365,6 +404,7 @@ static void GCNetworkReachabilityGetFlags(void *context)
     dispatch_sync_f(GCNetworkReachabilityLockQueue(), &context, GCNetworkReachabilityGetFlags);
     return *context.value;
 }
+#endif
 
 
 static const void * GCNetworkReachabilityRetainCallback(const void *info)
@@ -378,6 +418,7 @@ static void GCNetworkReachabilityReleaseCallback(const void *info)
     CFRelease(info);
 }
 
+#if TARGET_OS_IOS
 static void GCNetworkReachabilityCallbackWithBlock(SCNetworkReachabilityRef __unused target, SCNetworkReachabilityFlags flags, void *info)
 {
     GCNetworkReachabilityStatus status = GCNetworkReachabilityStatusForFlags(flags);
@@ -386,7 +427,9 @@ static void GCNetworkReachabilityCallbackWithBlock(SCNetworkReachabilityRef __un
     
     GCNetworkReachabilityPrintFlags(flags);
 }
+#endif
 
+#if TARGET_OS_IOS
 static void GCNetworkReachabilityCallback(SCNetworkReachabilityRef __unused target, SCNetworkReachabilityFlags flags, void *info)
 {
     GCNetworkReachabilityStatus status = GCNetworkReachabilityStatusForFlags(flags);
@@ -398,6 +441,7 @@ static void GCNetworkReachabilityCallback(SCNetworkReachabilityRef __unused targ
     
     GCNetworkReachabilityPrintFlags(flags);
 }
+#endif
 
 - (void)startMonitoringNetworkReachabilityWithHandler:(void(^)(GCNetworkReachabilityStatus))block
 {
@@ -418,6 +462,7 @@ static void GCNetworkReachabilityCallback(SCNetworkReachabilityRef __unused targ
         }
     };
     
+#if TARGET_OS_IOS
     SCNetworkReachabilityContext context = {
         
         0,
@@ -432,12 +477,15 @@ static void GCNetworkReachabilityCallback(SCNetworkReachabilityRef __unused targ
         GCNRLog(@"SCNetworkReachabilitySetCallbackWithBlock() failed with error code: %s", SCErrorString(SCError()));
         return;
     }
+#endif
     
     [self createReachabilityQueue];
 }
 
 - (void)startMonitoringNetworkReachabilityWithNotification
 {
+    
+#if TARGET_OS_IOS
     SCNetworkReachabilityContext context = {
         
         0,
@@ -452,14 +500,16 @@ static void GCNetworkReachabilityCallback(SCNetworkReachabilityRef __unused targ
         GCNRLog(@"SCNetworkReachabilitySetCallback() failed with error code: %s", SCErrorString(SCError()));
         return;
     }
+#endif
     
     [self createReachabilityQueue];
 }
 
 - (void)stopMonitoringNetworkReachability
 {
+#if TARGET_OS_IOS
     if (self->_networkReachability) SCNetworkReachabilitySetCallback(self->_networkReachability, NULL, NULL);
-    
+#endif
     if (self->_handler_blk) self->_handler_blk = nil;
     
     [self releaseReachabilityQueue];
