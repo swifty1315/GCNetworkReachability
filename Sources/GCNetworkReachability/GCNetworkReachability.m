@@ -272,7 +272,7 @@ static void GCNetworkReachabilitySetIPv6SocketAddress(struct sockaddr_in6 *addr)
 #if TARGET_OS_IOS
     if (self->_networkReachability)
     {
-        CFRelease((__bridge CFTypeRef)(self->_networkReachability));
+        CFRelease(self->_networkReachability);
         self->_networkReachability = NULL;
     }
 #endif
