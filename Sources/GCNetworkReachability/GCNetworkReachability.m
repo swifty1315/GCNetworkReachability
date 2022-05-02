@@ -361,6 +361,7 @@ static void GCNetworkReachabilityGetCurrentStatus(void *context)
 }
 #endif
 
+#if TARGET_OS_IOS
 - (BOOL)isReachable
 {
     return [self currentReachabilityStatus] != GCNetworkReachabilityStatusNotReachable;
@@ -370,8 +371,9 @@ static void GCNetworkReachabilityGetCurrentStatus(void *context)
 {
     return [self currentReachabilityStatus] & GCNetworkReachabilityStatusWiFi;
 }
+#endif
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 - (BOOL)isReachableViaWWAN
 {
     return [self currentReachabilityStatus] & GCNetworkReachabilityStatusWWAN;

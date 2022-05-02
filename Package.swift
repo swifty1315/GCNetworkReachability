@@ -12,6 +12,11 @@ let package = Package(
     ],
     targets: [
         
-        .target(name: "GCNetworkReachability"),
+        .target(
+            
+            name: "GCNetworkReachability",
+            publicHeadersPath: "."
+        ),
+        
     ]
 )

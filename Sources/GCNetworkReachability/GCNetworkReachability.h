@@ -74,19 +74,15 @@ extern NSString * const kGCNetworkReachabilityStatusKey;
 
 - (void)stopMonitoringNetworkReachability;
 
-
+#if TARGET_OS_IOS
 - (GCNetworkReachabilityStatus)currentReachabilityStatus;
-
 
 - (BOOL)isReachable;
 
 - (BOOL)isReachableViaWiFi;
 
-#if TARGET_OS_IPHONE
 - (BOOL)isReachableViaWWAN;
-#endif
 
-#if TARGET_OS_IOS
 - (SCNetworkReachabilityFlags)reachabilityFlags;
 #endif
 
